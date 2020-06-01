@@ -17,17 +17,16 @@
 #       do not attempt to build with AVX2 instructions
 #   DEACTIVATE_LZ4: default OFF
 #       do not include support for the LZ4 library
-#   DEACTIVATE_SNAPPY: default OFF
+#   DEACTIVATE_SNAPPY: default ON
 #       do not include support for the Snappy library
 #   DEACTIVATE_ZLIB: default OFF
 #       do not include support for the Zlib library
 #   DEACTIVATE_ZSTD: default OFF
 #       do not include support for the Zstd library
+#   DEACTIVATE_SYMBOLS_CHECK: default ON
+#       do not check for symbols in shared or static libraries
 #   PREFER_EXTERNAL_LZ4: default OFF
 #       when found, use the installed LZ4 libs instead of included
-#       sources
-#   PREFER_EXTERNAL_SNAPPY: default OFF
-#       when found, use the installed Snappy libs instead of included
 #       sources
 #   PREFER_EXTERNAL_ZLIB: default OFF
 #       when found, use the installed zlib libs instead of included
@@ -73,7 +72,7 @@ cmake_minimum_required(VERSION 2.8.12)
 if (NOT CMAKE_VERSION VERSION_LESS 3.3)
     cmake_policy(SET CMP0063 NEW)
 endif()
-project(blosc)
+project(blosc C)
 
 # parse the full version numbers from blosc.h
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/blosc/blosc.h _blosc_h_contents)
@@ -104,15 +103,15 @@ option(DEACTIVATE_AVX2
 option(DEACTIVATE_LZ4
     "Do not include support for the LZ4 library." OFF)
 option(DEACTIVATE_SNAPPY
-    "Do not include support for the Snappy library." OFF)
+    "Do not include support for the Snappy library." ON)
 option(DEACTIVATE_ZLIB
     "Do not include support for the Zlib library." OFF)
 option(DEACTIVATE_ZSTD
-    "Do not include support for the Zstd library." OFF)
+        "Do not include support for the Zstd library." OFF)
+option(DEACTIVATE_SYMBOLS_CHECK
+        "Do not check for symbols in shared or static libraries." ON)
 option(PREFER_EXTERNAL_LZ4
     "Find and use external LZ4 library instead of included sources." OFF)
-option(PREFER_EXTERNAL_SNAPPY
-    "Find and use external Snappy library instead of included sources." OFF)
 option(PREFER_EXTERNAL_ZLIB
     "Find and use external Zlib library instead of included sources." OFF)
 option(PREFER_EXTERNAL_ZSTD
@@ -133,14 +132,13 @@ if(NOT DEACTIVATE_LZ4)
 endif(NOT DEACTIVATE_LZ4)
 
 if(NOT DEACTIVATE_SNAPPY)
-    if(PREFER_EXTERNAL_SNAPPY)
-        find_package(Snappy)
+    find_package(Snappy)
+    if(SNAPPY_FOUND)
+        message(STATUS "Activating support for SNAPPY.")
+        set(HAVE_SNAPPY TRUE)
     else()
-        message(STATUS "Using Snappy internal sources.")
-    endif(PREFER_EXTERNAL_SNAPPY)
-    # HAVE_SNAPPY will be set to true because even if the library is not found,
-    # we will use the included sources for it
-    set(HAVE_SNAPPY TRUE)
+        message(STATUS "SNAPPY *not* found.  De-activating support for it.")
+    endif()
 endif(NOT DEACTIVATE_SNAPPY)
 
 if(NOT DEACTIVATE_ZLIB)
@@ -223,10 +221,7 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL i386 OR
     elseif(CMAKE_C_COMPILER_ID STREQUAL Intel)
         set(COMPILER_SUPPORT_SSE2 TRUE)
         if(CMAKE_C_COMPILER_VERSION VERSION_GREATER 14.0 OR CMAKE_C_COMPILER_VERSION VERSION_EQUAL 14.0)
-	    # icc (ICC) 15.0.3 does not work compiling AVX2 code
-	    # (perhaps my machine does not have AVX2 and the compiler
-	    # cannot generate code for that?)
-            set(COMPILER_SUPPORT_AVX2 FALSE)
+            set(COMPILER_SUPPORT_AVX2 TRUE)
         else()
             set(COMPILER_SUPPORT_AVX2 FALSE)
         endif()
@@ -254,8 +249,8 @@ if(DEACTIVATE_SSE2)
     set(COMPILER_SUPPORT_SSE2 FALSE)
 endif()
 
-# disable AVX2 if specified
-if(DEACTIVATE_AVX2)
+# disable AVX2 if specified or if SSE is deactivated
+if(DEACTIVATE_AVX2 OR DEACTIVATE_SSE2)
     set(COMPILER_SUPPORT_AVX2 FALSE)
 endif()
 

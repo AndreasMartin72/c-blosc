@@ -24,25 +24,26 @@ size_t size = 5*MB;
 #define BUFFER_ALIGN_SIZE   8
 
 void *src, *dest, *dest2;
-size_t nbytes, cbytes;
+int nbytes, cbytes;
 
 int tests_run = 0;
 
-static char *test_forksafe(void) {
+static const char *test_forksafe(void) {
   /* Compress the input data and store it in dest. */
   blosc_set_nthreads(4);
-  cbytes = blosc_compress(clevel, doshuffle, typesize, size, src, dest, size);
+  cbytes = blosc_compress(clevel, doshuffle, typesize, size, src, dest, size + BLOSC_MAX_OVERHEAD);
 
   pid_t newpid = fork();
   if (newpid == 0) {
     nbytes = blosc_decompress(dest, dest2, size);
-    mu_assert(nbytes == size, "ERROR: Result buffer did not match expected size in child.");
+    mu_assert("ERROR: Result buffer did not match expected size in child.", nbytes == size);
     exit(0);
   }
 
   int success = 0;
-	int status;
-  for(float sec = 0; sec < 1; ) {
+  int status = 0;
+  float sec = 0;
+  while (sec < 1) {
     if(waitpid(newpid, &status, WNOHANG) != 0) {
       success = 1;
       break;
@@ -79,7 +80,7 @@ int main(int argc, char **argv) {
 
   /* Initialize buffers */
   src = blosc_test_malloc(BUFFER_ALIGN_SIZE, size);
-  dest = blosc_test_malloc(BUFFER_ALIGN_SIZE, size + 16);
+  dest = blosc_test_malloc(BUFFER_ALIGN_SIZE, size + BLOSC_MAX_OVERHEAD);
   dest2 = blosc_test_malloc(BUFFER_ALIGN_SIZE, size);
 
   /* Fill the input data buffer with random values. */

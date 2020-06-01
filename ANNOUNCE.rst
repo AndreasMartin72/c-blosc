@@ -1,12 +1,15 @@
 ===============================================================
- Announcing C-Blosc 1.14.5
+ Announcing C-Blosc 1.18.1
  A blocking, shuffling and lossless compression library for C
 ===============================================================
 
 What is new?
 ============
 
-#XXX version-specific blurb XXX#
+A maintenance release where the copy of the leftovers of a chunk when
+its size is not a multiple of typesize.  Although this is a very unusual
+situation, it can certainly happen (e.g.
+https://github.com/Blosc/python-blosc/issues/220).
 
 For more info, please see the release notes in:
 

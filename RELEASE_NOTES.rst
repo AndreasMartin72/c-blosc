@@ -2,19 +2,125 @@
  Release notes for C-Blosc
 ===========================
 
-:Author: Francesc Alted
-:Contact: francesc@blosc.org
-:URL: http://www.blosc.org
+Changes from 1.18.1 to 1.18.2
+=============================
+
+- Conan packaging has been deprecated (from now on, we should try
+  to focus on supporting wheels only).
 
 
-Changes from 1.14.4 to 1.14.5
+Changes from 1.17.1 to 1.18.1
+=============================
+
+- Fixed the copy of the leftovers of a chunk when its size is not a
+  multiple of the typesize.  Although this is a very unusual situation,
+  it can certainly happen (e.g.
+  https://github.com/Blosc/python-blosc/issues/220).
+
+
+Changes from 1.17.0 to 1.17.1
+=============================
+
+- Zstd codec updated to 1.4.4.
+
+- LZ4 codec updated to 1.9.2.
+
+
+Changes from 1.16.3 to 1.17.0
+=============================
+
+- LZ4 codec updated to 1.9.1.
+
+- Zstd codec updated to 1.4.1.
+
+- BloscLZ codec updated to 2.0.0.  Although this should be fully backward
+  compatible, it contains important changes that affects mainly speed, but
+  also compression ratios.  Feedback on how it behaves on your own data is
+  appreciated.
+
+
+Changes from 1.16.2 to 1.16.3
+=============================
+
+- Fix for building for clang with -march=haswell. See PR #262.
+
+- Fix all the known warnings for GCC/Clang.  Still some work to do for MSVC
+  in this front.
+
+- Due to some problems with several CI systems, the check for library symbols
+  are deactivated now by default.  If you want to enforce this check, use:
+  `cmake .. -DDEACTIVATE_SYMBOLS_CHECK=ON` to re-activate it.
+
+
+Changes from 1.16.1 to 1.16.2
+=============================
+
+- Correct the check for the compressed size when the buffer is memcpyed.  This
+  was a regression introduced in 1.16.0.  Fixes #261.
+
+
+Changes from 1.16.0 to 1.16.1
+=============================
+
+- Fixed a regression in 1.16.0 that prevented to compress empty buffers
+  (see #260).
+
+- Zstd updated to 1.3.8 (from 1.3.7).
+
+
+Changes from 1.15.1 to 1.16.0
+=============================
+
+- Now the functions that execute Blosc decompressions are safe by default
+  for untrusted/possibly corrupted inputs.  The additional checks seem to
+  not affect performance significantly (see some benchmarks in #258), so
+  this is why they are the default now.
+
+  The previous functions (with less safety) checks are still available with a
+  '_unsafe' suffix.  The complete list is:
+
+    - blosc_decompress_unsafe()
+    - blosc_decompress_ctx_unsafe()
+    - blosc_getitem_unsafe()
+
+  Also, a new API function named blosc_cbuffer_validate(), for validating Blosc
+  compressed data, has been added.
+
+  For details, see PR #258.  Thanks to Jeremy Maitin-Shepard.
+
+- Fixed a bug in `blosc_compress()` that could lead to thread deadlock under
+  some situations.  See #251.  Thanks to @wenjuno for the report and the fix.
+
+- Fix data race in shuffle.c host_implementation initialization.  Fixes #253.
+  Thanks to Jeremy Maitin-Shepard.
+
+
+Changes from 1.15.0 to 1.15.1
+=============================
+
+- Add workaround for Visual Studio 2008's lack of a `stdint.h` file to
+  `blosclz.c`.
+
+
+Changes from 1.14.4 to 1.15.0
 =============================
 
 - The `blosc_compress()` and `blosc_decompress()` interfaces are now
   fork-safe, preventing child-process deadlocks in fork-based
   multiprocessing applications. These interfaces with BLOSC_NOLOCK were, and
   continue to be, fork-safe. `_ctx` interface context reuse continues to be
-  unsafe in the child process post-fork. See #241.
+  unsafe in the child process post-fork. See #241.  Thanks to Alex Ford.
+
+- Replaced //-comments with /**/-comments and other improvements for
+  compatibility with quite old gcc compilers.  See PR #243.  Thanks to
+  Andreas Martin.
+
+- Empty buffers can be compressed again (this was unadvertedly prevented while
+  fixing #234).  See #247.  Thanks to Valentin Haenel.
+
+- LZ4 internal codec upgraded to 1.8.3 (from 1.8.1.2).
+
+- Zstd internal codec upgraded to 1.3.7 (from 1.3.4).
 
 
 Changes from 1.14.3 to 1.14.4
